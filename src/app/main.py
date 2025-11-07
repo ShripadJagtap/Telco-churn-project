@@ -43,6 +43,7 @@ class CustomerData(BaseModel):
     """
     # Demographics
     gender: str                # "Male" or "Female"
+    SeniorCitizen: int         # 0 = No, 1 = Yes
     Partner: str               # "Yes" or "No" - has partner
     Dependents: str            # "Yes" or "No" - has dependents
     
@@ -98,7 +99,7 @@ def get_prediction(data: CustomerData):
 
 # === GRADIO WEB INTERFACE ===
 def gradio_interface(
-    gender, Partner, Dependents, PhoneService, MultipleLines,
+    gender, SeniorCitizen, Partner, Dependents, PhoneService, MultipleLines,
     InternetService, OnlineSecurity, OnlineBackup, DeviceProtection,
     TechSupport, StreamingTV, StreamingMovies, Contract,
     PaperlessBilling, PaymentMethod, tenure, MonthlyCharges, TotalCharges
@@ -116,6 +117,7 @@ def gradio_interface(
     # Construct data dictionary matching CustomerData schema
     data = {
         "gender": gender,
+        "SeniorCitizen": int(SeniorCitizen),
         "Partner": Partner,
         "Dependents": Dependents,
         "PhoneService": PhoneService,
@@ -146,6 +148,7 @@ demo = gr.Interface(
     inputs=[
         # Demographics section
         gr.Dropdown(["Male", "Female"], label="Gender", value="Male"),
+        gr.Dropdown([0, 1], label="Senior Citizen (0 = No, 1 = Yes)", value=0),
         gr.Dropdown(["Yes", "No"], label="Partner", value="No"),
         gr.Dropdown(["Yes", "No"], label="Dependents", value="No"),
         
@@ -188,11 +191,11 @@ demo = gr.Interface(
     """,
     examples=[
         # High churn risk example
-        ["Female", "No", "No", "Yes", "No", "Fiber optic", "No", "No", "No", 
+        ["Female", 0, "No", "No", "Yes", "No", "Fiber optic", "No", "No", "No", 
          "No", "Yes", "Yes", "Month-to-month", "Yes", "Electronic check", 
          1, 85.0, 85.0],
         # Low churn risk example  
-        ["Male", "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes",
+        ["Male", 1, "Yes", "Yes", "Yes", "Yes", "DSL", "Yes", "Yes", "Yes",
          "Yes", "No", "No", "Two year", "No", "Credit card (automatic)",
          60, 45.0, 2700.0]
     ],

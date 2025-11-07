@@ -1,5 +1,6 @@
 import great_expectations as ge
 from typing import Tuple, List
+import pandas as pd
 
 
 def validate_telco_data(df) -> Tuple[bool, List[str]]:
@@ -69,7 +70,10 @@ def validate_telco_data(df) -> Tuple[bool, List[str]]:
     
     # Monthly charges must be positive (business logic - no free service)
     ge_df.expect_column_values_to_be_between("MonthlyCharges", min_value=0)
-    
+    # Fix: convert TotalCharges to numeric safely
+    df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
+    df["TotalCharges"] = df["TotalCharges"].fillna(0)
+
     # Total charges should be non-negative (business logic)
     ge_df.expect_column_values_to_be_between("TotalCharges", min_value=0)
     
