@@ -1,63 +1,200 @@
-## Telco Churn – End-to-End ML Project
-### Purpose
 
-Build and ship a full machine-learning solution for predicting customer churn in a telecom setting—from data prep and modeling to an API + web UI deployed on AWS.
+# Telco Customer Churn Prediction (End-to-End Production ML on AWS)
 
-### Problem solved & benefits
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-Production%20API-green)
+![Docker](https://img.shields.io/badge/Containerized-Docker-blueviolet)
+![AWS](https://img.shields.io/badge/Deploy-ECS%20Fargate-orange)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-yellow)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-- Faster decisions: Predicts which customers are likely to churn so teams can act before they leave.
-- Operationalized ML: Model is accessible via a REST API and a simple UI; anyone can test it without notebooks.
-- Repeatable delivery: CI/CD + containers mean every change can be rebuilt, tested, and redeployed in a consistent way.
-- Traceable experiments: MLflow tracks runs, metrics, and artifacts for reproducibility and auditing.
+**Production-grade Telecom Customer Churn Prediction System with FastAPI, Docker, MLflow, and AWS ECS Fargate Deployment.**
 
-### What I built?
+This project is a **real-world scalable production machine learning system** that predicts which telecom customers are likely to churn.  
+Unlike typical notebook-only churn repos, this project includes full **MLOps pipeline, containerization, CI/CD and cloud deployment**.
 
-- Data & Modeling: Feature engineering + XGBoost classifier; experiments logged to MLflow.
-- Model tracking: Runs, metrics, and the serialized model logged under a named MLflow experiment.
-- Inference service: FastAPI app exposing /predict (POST) and a root health check /.
-- Web UI: Gradio interface mounted at /ui for quick, shareable manual testing.
-- Containerization: Docker image with uvicorn entrypoint (src.app.main:app) listening on port 8000.
-- CI/CD: GitHub Actions builds the image and pushes to Docker Hub; optionally triggers an ECS service update.
-- Orchestration: AWS ECS Fargate runs the container (serverless).
-- Networking: Application Load Balancer (ALB) on HTTP:80 forwarding to a Target Group (IP targets on HTTP:8000).
-- Security: Security groups scoped to allow ALB inbound 80 from the internet, and task inbound 8000 from the ALB SG.
-- Observability: CloudWatch Logs for container stdout/stderr and ECS service events.
+> ### Business Impact
+> In telecom, retaining customers is far more profitable than acquiring new ones.  
+> Reducing churn by **even 5%** can increase profits by **20–40%**.  
+> This system demonstrates how machine learning can directly generate measurable financial impact by enabling proactive retention campaigns.
 
-### Deployment flow (high-level)
+---
 
-- Push to main → GitHub Actions builds the Docker image and pushes it to Docker Hub.
-- ECS service is updated (manually or via the workflow) to force a new deployment.
-- ALB health checks hit / on port 8000; once healthy, traffic is routed to the new task.
-- Users call POST /predict or open the Gradio UI at /ui via the ALB DNS.
+## Key Features ✨
 
-### Roadblocks & how we solved them
+- Predict **customer churn probability**
+- FastAPI based REST inference service (`/predict`)
+- Gradio UI at `/ui` for business demo / validation
+- MLflow experiment tracking + metric versioning
+- Fully containerized using Docker
+- CI/CD with GitHub Actions → automated build → deploy
+- Production deployment on **AWS ECS Fargate behind ALB**
+- CloudWatch logs for observability
+- Health endpoint for ALB target group checks
 
-Unhealthy targets behind ALB
+---
 
-- Cause: App didn’t respond at the health-check path; listener/target port mismatches.
-- Fixes: Added GET / health endpoint; confirmed ALB listener on 80 forwards to TG on 8000; TG health check path set to /.
+## Tech Stack 🧰
 
-Module import error in container (ModuleNotFoundError: serving)
+| Layer | Tools |
+|------:|:------|
+| Modeling / Training | Python, scikit-learn, MLflow |
+| Serving API | FastAPI |
+| User Interface | Gradio |
+| Containerization | Docker |
+| Cloud Deploy | AWS ECS Fargate + ALB |
+| CI/CD | GitHub Actions |
+| Monitoring | AWS CloudWatch |
 
-- Cause: Python path in the image didn’t include src/.
-- Fixes: Set PYTHONPATH=/app/src in the Dockerfile; corrected uvicorn app path to src.app.main:app.
+---
 
-ALB DNS timing out
+## Repository structure 📁
 
-- Cause: Security group rules not aligned with traffic flow.
-- Fixes: ALB SG allows inbound 80 from 0.0.0.0/0; task SG allows inbound 8000 from the ALB SG; outbound open.
+Top-level layout (clean tree):
 
-ECS redeploy not picking up the new image
+```
+Telco-churn-project/
+├── src/                 # API, inference, model serving, preprocessing, features
+├── models/              # trained model artifacts (if present)
+├── notebooks/           # EDA and experimentation notebooks
+├── scripts/             # utility scripts (data prep, training helpers)
+├── mlruns/              # MLflow local experiment logs (if used)
+├── data/                # raw and processed datasets
+│   ├── raw/
+│   └── processed/
+├── requirements.txt
+└── README.md
+```
 
-- Cause: Service still running previous task definition.
-- Fixes: Force new deployment (CLI or console) after pushing the new image; optional step added to CI.
+---
 
-Gradio UI error (“No runs found in experiment”)
+## How to run locally ▶️
 
-- Cause: Inference/UI expected an MLflow-logged model but couldn’t resolve a run.
-- Fixes: Standardized MLflow experiment name and model logging in training; inference loads the logged model consistently (and a local path for dev).
+1. Clone the repository:
 
-Local testing vs. prod paths
+```bash
+git clone https://github.com/ShripadJagtap/Telco-churn-project.git
+cd Telco-churn-project
+```
 
-- Cause: MLflow artifact URIs differ locally vs. in container.
-- Fixes: For local dev, load via direct ./mlruns/.../artifacts/model; in prod, container loads the packaged model path used at build time.
+2. Create a virtual environment and install dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # macOS / Linux (zsh)
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+3. Start the FastAPI app for development:
+
+```bash
+uvicorn src.app:app --reload
+```
+
+4. Open the Gradio UI in your browser:
+
+http://127.0.0.1:8000/ui
+
+---
+
+## API endpoints 🔌
+
+- POST `/predict`  — returns churn probability for a customer payload
+- GET `/health`    — simple health check for ALB / orchestrator
+- GET `/ui`        — Gradio-based demo UI
+
+(Refer to `src/app` for precise request/response JSON schemas.)
+
+---
+
+## Deployment 🚀
+
+Deployment architecture (ASCII diagram):
+
+```
+					Internet
+					   |
+					   v
+				   [ALB / DNS]
+					   |
+		   -----------------------------
+		   |                           |
+		   v                           v
+	[ECS Fargate Service]         [MLflow Tracking Server]
+	(FastAPI + Gradio)                (optional)
+		   |
+	----------------
+	|              |
+	v              v
+[CloudWatch]    [EFS / S3 (artifacts & logs)]
+
+```
+
+Notes:
+- Build a Docker image for the FastAPI service, push to ECR, then deploy to ECS Fargate behind an Application Load Balancer (ALB).
+- Use CloudWatch for logs and metrics; optionally use MLflow server (with backing storage) for experiment tracking.
+
+---
+
+## Model card (summary) 🧾
+
+**Purpose**
+
+Predict which telecom customers are likely to churn in the near future. Useful for targeting retention campaigns and prioritizing outreach.
+
+**Intended use**
+
+- Customer retention strategy and ROI-driven retention campaigns
+- CRM automation and personalization
+- Not intended for: credit/loan decisions, legal eligibility, or other high-stakes automated decisions without additional governance
+
+**Training data**
+
+Public Telco churn dataset containing contract type, billing, tenure, services subscribed, payment methods and monthly charges. Target is `Churn` (binary).
+
+**Model type**
+
+Scikit-learn binary classifier (best model selected via MLflow experiments).
+
+**Key metrics (typical ranges)**
+
+- ROC-AUC: ~0.80–0.85 (varies by experiment)
+- Recall prioritized to reduce false negatives (hidden churners)
+- Precision tuned to balance retention cost vs. false-positive outreach
+
+**Ethical considerations**
+
+- Avoid using sensitive demographic features without fairness checks
+- Monitor model performance over time for data drift and fairness drift
+
+**Versioning & reproducibility**
+
+MLflow is used for experiment tracking and artifact reproducibility. Check `mlruns/` and the training scripts in `src/models`.
+
+---
+
+## Roadmap / future work 🛣️
+
+- Prometheus metrics endpoint
+- Cost-optimized decision thresholding
+- Automated data-drift detection and scheduled retraining
+- Export to ONNX / skops for portable inference
+- Use AWS Secrets Manager for secrets instead of plain env vars
+
+---
+
+## Quick notes 📝
+
+- If you plan to deploy to AWS, the repository assumes you will build a Docker image and push it to ECR, then deploy to ECS Fargate behind an Application Load Balancer.
+- Check the `.github/workflows` directory for CI/CD examples (build, test, push, deploy).
+
+---
+
+## License ⚖️
+
+MIT
+
+## Author 👤
+
+Shripad Jagtap
